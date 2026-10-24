@@ -363,9 +363,9 @@
                 </section>
                 
                 <section class="panel">
-                    <h2>Smart Interactive Features</h2>
-                    <p>Maximum characters allowed: 10. Ambient sunset and night color overlays are rendered over the scene to maintain natural grass colors.</p>
-                </section>
+    		    <h2>Get Custom Pixel Art Sprites! ✨</h2>
+    		    <p>Love these characters? Want your own custom pixel art character, original avatar, or RPG Maker sprite sheet added into the game? Check out my commission portfolio and order custom sprites at <a href="https://vgen.co/billy_bones999" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 700; text-decoration: underline;">VGen (billy_bones999)</a>!</p>
+		</section>
             </div>
         </main>
         
@@ -1136,21 +1136,33 @@
         });
 
         removeBtn.addEventListener('click', () => {
-            if (actors.length <= 1) {
-                selectedName.textContent = 'Minimum limit reached';
-                selectedDesc.textContent = 'The world must keep at least 1 inhabitant.';
-                selectedStatus.textContent = 'Minimum limit';
-                charPickerWrap.style.display = 'none';
-                fsCharOverlay.style.display = 'none';
-                return;
-            }
-            const removed = actors.pop();
-            if (selected === removed) {
-                selected = null;
-                showSelected(null);
-            }
-            updateHud();
-        });
+    if (actors.length <= 1) {
+        selectedName.textContent = 'Minimum limit reached';
+        selectedDesc.textContent = 'The world must keep at least 1 inhabitant.';
+        selectedStatus.textContent = 'Minimum limit';
+        charPickerWrap.style.display = 'none';
+        fsCharOverlay.style.display = 'none';
+        return;
+    }
+
+    if (selected) {
+        // Hapus karakter yang sedang dipilih (selected)
+        const index = actors.indexOf(selected);
+        if (index !== -1) {
+            actors.splice(index, 1);
+        }
+        selected = null;
+        showSelected(null);
+    } else {
+        // Jika tidak ada yang dipilih, hapus karakter paling terakhir
+        const removed = actors.pop();
+        if (selected === removed) {
+            selected = null;
+            showSelected(null);
+        }
+    }
+    updateHud();
+});
 
         resetBtn.addEventListener('click', () => { paused = false; reset(); updateHud(); });
         window.addEventListener('resize', resize);

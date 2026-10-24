@@ -10,7 +10,7 @@
     <meta name="author" content="billybones999">
     <meta name="keywords" content="pixel art, top down rpg, html5 canvas game, lofi web app, beruang games">
     
-    <!-- Open Graph / Sosial Media (Discord, WhatsApp, Telegram, dll) -->
+    <!-- Open Graph / Sosial Media -->
     <meta property="og:title" content="Living Pixel World — Top-Down Prototype">
     <meta property="og:description" content="Explore an interactive pixel world with smart autonomous characters, lofi background beats, and dynamic weather/time cycles.">
     <meta property="og:type" content="website">
@@ -159,6 +159,7 @@
             flex-wrap: wrap;
             gap: 7px;
             pointer-events: none;
+            transition: opacity 0.25s ease;
         }
 
         .pill {
@@ -176,6 +177,7 @@
             right: 12px;
             text-align: center;
             pointer-events: none;
+            transition: opacity 0.25s ease;
         }
 
         .hint span {
@@ -185,6 +187,44 @@
             border-radius: 999px;
             color: #e9efd9;
             font-size: .83rem;
+        }
+
+        /* Overlay Pemilih Karakter Melayang Khusus Mode Fullscreen */
+        .fs-char-overlay {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            background: #13251de8;
+            border: 1px solid #ffffff33;
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 100;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 4px 20px #0008;
+            max-width: 240px;
+        }
+
+        .fs-char-overlay label {
+            font-size: .75rem;
+            color: var(--accent);
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .fs-char-overlay select {
+            width: 100%;
+            padding: 6px 10px;
+            font-size: .85rem;
+        }
+
+        /* Sembunyikan elemen jika class .hud-hidden aktif */
+        .hud-hidden .hud, 
+        .hud-hidden .hint {
+            opacity: 0;
+            pointer-events: none;
         }
 
         .below {
@@ -284,6 +324,7 @@
                 <button id="pauseBtn">⏸ Pause</button>
                 <button id="addBtn">＋ Add</button>
                 <button id="removeBtn">－ Remove</button>
+                <button id="hudToggleBtn">👁 Hide HUD</button>
                 <button id="fullscreenBtn">⛶ Fullscreen</button>
                 <button id="resetBtn">↻ Reset</button>
             </div>
@@ -299,6 +340,12 @@
                 </div>
                 <div class="hint">
                     <span>Click a character to select · Click ground to deselect</span>
+                </div>
+
+                <!-- Overlay Pemilih Karakter untuk Mode Fullscreen -->
+                <div class="fs-char-overlay" id="fsCharOverlay">
+                    <label for="fsCharSelect">Change Sprite:</label>
+                    <select id="fsCharSelect" aria-label="Choose Character Sprite in Fullscreen"></select>
                 </div>
             </div>
             
@@ -440,15 +487,17 @@
         
         const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
         const pauseBtn = document.getElementById('pauseBtn'), addBtn = document.getElementById('addBtn'), removeBtn = document.getElementById('removeBtn'), resetBtn = document.getElementById('resetBtn');
-        const fullscreenBtn = document.getElementById('fullscreenBtn'), worldWrap = document.getElementById('worldWrap');
+        const fullscreenBtn = document.getElementById('fullscreenBtn'), worldWrap = document.getElementById('worldWrap'), hudToggleBtn = document.getElementById('hudToggleBtn');
         const countPill = document.getElementById('countPill'), statePill = document.getElementById('statePill'), timePill = document.getElementById('timePill');
         const selectedName = document.getElementById('selectedName'), selectedDesc = document.getElementById('selectedDesc'), selectedStatus = document.getElementById('selectedStatus');
         const charPickerWrap = document.getElementById('charPickerWrap'), charSelect = document.getElementById('charSelect');
+        const fsCharOverlay = document.getElementById('fsCharOverlay'), fsCharSelect = document.getElementById('fsCharSelect');
 
         const lofiAudio = document.getElementById('lofiAudio');
         const radioBtn = document.getElementById('radioBtn');
         const stationSelect = document.getElementById('stationSelect');
         let isPlayingRadio = true;
+        let isHudVisible = true;
 
         const dialogues = [
             "Hello there!", "Nice weather today~", "What are you up to?", 
@@ -456,11 +505,15 @@
             "Let's take a walk!", "Lovely place, isn't it?"
         ];
 
+        // Memuat opsi sprite untuk select biasa dan select fullscreen
         SPRITES.forEach((s, idx) => {
             const opt = document.createElement('option');
             opt.value = idx;
             opt.textContent = `${s.name} (${s.data.split('/')[1]})`;
             charSelect.appendChild(opt);
+
+            const optFs = opt.cloneNode(true);
+            fsCharSelect.appendChild(optFs);
         });
 
         function startMusic() {
@@ -535,33 +588,29 @@
         }
 
         function makeDecor() {
-    decor = [];
+            decor = [];
 
-    // Pohon (Selalu ada di semua perangkat)
-    decor.push(
-        { x: W * .15, y: H * .25, type: 'tree', solid: true, radius: 24 },
-        { x: W * .85, y: H * .28, type: 'tree', solid: true, radius: 24 },
-        { x: W * .20, y: H * .90, type: 'tree', solid: true, radius: 24 },
-        { x: W * .80, y: H * .90, type: 'tree', solid: true, radius: 24 }
-    );
+            decor.push(
+                { x: W * .15, y: H * .25, type: 'tree', solid: true, radius: 24 },
+                { x: W * .85, y: H * .28, type: 'tree', solid: true, radius: 24 },
+                { x: W * .20, y: H * .90, type: 'tree', solid: true, radius: 24 },
+                { x: W * .80, y: H * .90, type: 'tree', solid: true, radius: 24 }
+            );
 
-    // Deteksi khusus perangkat sentuh mobile yang sebenarnya (layar kecil dan perangkat touch)
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (window.innerWidth <= 900 || window.innerHeight <= 600);
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (window.innerWidth <= 900 || window.innerHeight <= 600);
 
-    // Kursi Taman (bench.png) MUNCUL di Laptop, dan HANYA disembunyikan jika itu benar-benar HP
-    if (!isMobile) {
-        decor.push(
-            { x: W * .38, y: H * .38, type: 'bench', solid: true, radius: 20 },
-            { x: W * .62, y: H * .38, type: 'bench', solid: true, radius: 20 }
-        );
-    }
+            if (!isMobile) {
+                decor.push(
+                    { x: W * .38, y: H * .38, type: 'bench', solid: true, radius: 20 },
+                    { x: W * .62, y: H * .38, type: 'bench', solid: true, radius: 20 }
+                );
+            }
 
-    // Lampu Jalan
-    decor.push(
-        { x: W * .26, y: H * .38, type: 'lamp', solid: true, radius: 14 },
-        { x: W * .74, y: H * .38, type: 'lamp', solid: true, radius: 14 }
-    );
-}
+            decor.push(
+                { x: W * .26, y: H * .38, type: 'lamp', solid: true, radius: 14 },
+                { x: W * .74, y: H * .38, type: 'lamp', solid: true, radius: 14 }
+            );
+        }
 
         function getSafeSpawnPosition() {
             let x, y, safe = false;
@@ -644,11 +693,14 @@
         }
 
         function showSelected(a) {
+            const isFullscreen = !!document.fullscreenElement;
+
             if (!a) {
                 selectedName.textContent = 'Select an inhabitant';
                 selectedDesc.textContent = 'Characters navigate in four directions using RPG Maker sprite sheet frames.';
                 selectedStatus.textContent = 'No selection';
                 charPickerWrap.style.display = 'none';
+                fsCharOverlay.style.display = 'none';
                 return;
             }
             selectedName.textContent = a.name;
@@ -656,10 +708,29 @@
             selectedStatus.textContent = a.state === 'walk' ? 'Walking' : a.hello > 0 ? 'Greeting' : 'Resting';
             
             charSelect.value = a.kind;
-            charPickerWrap.style.display = 'flex';
+            fsCharSelect.value = a.kind;
+
+            if (isFullscreen) {
+                fsCharOverlay.style.display = 'flex';
+                charPickerWrap.style.display = 'none';
+            } else {
+                charPickerWrap.style.display = 'flex';
+                fsCharOverlay.style.display = 'none';
+            }
         }
 
+        // Event listener saat mengganti karakter dari menu utama
         charSelect.addEventListener('change', (e) => {
+            if (!selected) return;
+            const newKind = parseInt(e.target.value, 10);
+            selected.kind = newKind;
+            selected.name = SPRITES[newKind].name;
+            selected.im = images[newKind];
+            showSelected(selected);
+        });
+
+        // Event listener saat mengganti karakter dari overlay Fullscreen
+        fsCharSelect.addEventListener('change', (e) => {
             if (!selected) return;
             const newKind = parseInt(e.target.value, 10);
             selected.kind = newKind;
@@ -1010,19 +1081,31 @@
 
         pauseBtn.addEventListener('click', () => { paused = !paused; updateHud(); });
         
+        // Fitur Sembunyikan / Tampilkan HUD
+        hudToggleBtn.addEventListener('click', () => {
+            isHudVisible = !isHudVisible;
+            if (isHudVisible) {
+                worldWrap.classList.remove('hud-hidden');
+                hudToggleBtn.textContent = '👁 Hide HUD';
+            } else {
+                worldWrap.classList.add('hud-hidden');
+                hudToggleBtn.textContent = '👁 Show HUD';
+            }
+        });
+
         // Fitur Tombol Fullscreen
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 if (worldWrap.requestFullscreen) {
                     worldWrap.requestFullscreen();
-                } else if (worldWrap.webkitRequestFullscreen) { /* Safari */
+                } else if (worldWrap.webkitRequestFullscreen) {
                     worldWrap.webkitRequestFullscreen();
                 }
                 fullscreenBtn.textContent = '⛶ Exit Fullscreen';
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { /* Safari */
+                } else if (document.webkitExitFullscreen) {
                     document.webkitExitFullscreen();
                 }
                 fullscreenBtn.textContent = '⛶ Fullscreen';
@@ -1033,6 +1116,7 @@
             if (!document.fullscreenElement) {
                 fullscreenBtn.textContent = '⛶ Fullscreen';
             }
+            if (selected) showSelected(selected);
             setTimeout(resize, 100);
         });
 
@@ -1042,6 +1126,7 @@
                 selectedDesc.textContent = 'Prototype is limited to a maximum of 10 characters.';
                 selectedStatus.textContent = 'Maximum limit';
                 charPickerWrap.style.display = 'none';
+                fsCharOverlay.style.display = 'none';
                 return;
             }
             selected = makeActor();
@@ -1056,6 +1141,7 @@
                 selectedDesc.textContent = 'The world must keep at least 1 inhabitant.';
                 selectedStatus.textContent = 'Minimum limit';
                 charPickerWrap.style.display = 'none';
+                fsCharOverlay.style.display = 'none';
                 return;
             }
             const removed = actors.pop();

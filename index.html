@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -497,28 +497,31 @@
         }
 
         function makeDecor() {
-            decor = [];
+    decor = [];
 
-            // Pohon
-            decor.push(
-                { x: W * .15, y: H * .25, type: 'tree', solid: true, radius: 24 },
-                { x: W * .85, y: H * .28, type: 'tree', solid: true, radius: 24 },
-                { x: W * .20, y: H * .90, type: 'tree', solid: true, radius: 24 },
-                { x: W * .80, y: H * .90, type: 'tree', solid: true, radius: 24 }
-            );
+    // Pohon (Selalu ada di semua perangkat)
+    decor.push(
+        { x: W * .15, y: H * .25, type: 'tree', solid: true, radius: 24 },
+        { x: W * .85, y: H * .28, type: 'tree', solid: true, radius: 24 },
+        { x: W * .20, y: H * .90, type: 'tree', solid: true, radius: 24 },
+        { x: W * .80, y: H * .90, type: 'tree', solid: true, radius: 24 }
+    );
 
-            // Kursi Taman (Diposisikan di samping jalan)
-            decor.push(
-                { x: W * .38, y: H * .38, type: 'bench', solid: true, radius: 20 },
-                { x: W * .62, y: H * .38, type: 'bench', solid: true, radius: 20 }
-            );
+    // Kursi Taman (bench.png) - HANYA dimunculkan jika lebar layar di atas 768px (Laptop/PC)
+    // Jika dibuka di ponsel (layar < 768px), bench tidak akan dimasukkan ke dalam game
+    if (W > 768) {
+        decor.push(
+            { x: W * .38, y: H * .38, type: 'bench', solid: true, radius: 20 },
+            { x: W * .62, y: H * .38, type: 'bench', solid: true, radius: 20 }
+        );
+    }
 
-            // Lampu Jalan
-            decor.push(
-                { x: W * .26, y: H * .38, type: 'lamp', solid: true, radius: 14 },
-                { x: W * .74, y: H * .38, type: 'lamp', solid: true, radius: 14 }
-            );
-        }
+    // Lampu Jalan
+    decor.push(
+        { x: W * .26, y: H * .38, type: 'lamp', solid: true, radius: 14 },
+        { x: W * .74, y: H * .38, type: 'lamp', solid: true, radius: 14 }
+    );
+}
 
         function getSafeSpawnPosition() {
             let x, y, safe = false;

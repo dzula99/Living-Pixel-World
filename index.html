@@ -24,6 +24,7 @@
             --panel: #17251f;
             --panel2: #24382c;
             --accent: #f4ce68;
+            --danger: #e76f51;
         }
 
         * {
@@ -200,11 +201,11 @@
             padding: 10px 14px;
             display: none;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
             z-index: 100;
             backdrop-filter: blur(6px);
             box-shadow: 0 4px 20px #0008;
-            max-width: 240px;
+            max-width: 260px;
         }
 
         .fs-char-overlay label {
@@ -218,6 +219,30 @@
             width: 100%;
             padding: 6px 10px;
             font-size: .85rem;
+        }
+
+        .fs-btn-group {
+            display: flex;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .fs-btn-group button {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: .8rem;
+            border-radius: 8px;
+        }
+
+        .fs-btn-remove {
+            background: #382424;
+            border-color: #6b3a32;
+            color: #f1a396;
+        }
+
+        .fs-btn-remove:hover {
+            border-color: var(--danger);
+            color: #fff;
         }
 
         /* Sembunyikan elemen jika class .hud-hidden aktif */
@@ -342,10 +367,15 @@
                     <span>Click a character to select · Click ground to deselect</span>
                 </div>
 
-                <!-- Overlay Pemilih Karakter untuk Mode Fullscreen -->
+                <!-- Overlay Pemilih Karakter & Kontrol untuk Mode Fullscreen -->
                 <div class="fs-char-overlay" id="fsCharOverlay">
                     <label for="fsCharSelect">Change Sprite:</label>
                     <select id="fsCharSelect" aria-label="Choose Character Sprite in Fullscreen"></select>
+                    
+                    <div class="fs-btn-group">
+                        <button id="fsAddBtn">＋ Add</button>
+                        <button id="fsRemoveBtn" class="fs-btn-remove">－ Remove</button>
+                    </div>
                 </div>
             </div>
             
@@ -363,9 +393,9 @@
                 </section>
                 
                 <section class="panel">
-    		    <h2>Get Custom Pixel Art Sprites! ✨</h2>
-    		    <p>Love these characters? Want your own custom pixel art character, original avatar, or RPG Maker sprite sheet added into the game? Check out my commission portfolio and order custom sprites at <a href="https://vgen.co/billy_bones999" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 700; text-decoration: underline;">VGen (billy_bones999)</a>!</p>
-		</section>
+                    <h2>Get Custom Pixel Art Sprites! ✨</h2>
+                    <p>Love these characters? Want your own custom pixel art character, original avatar, or RPG Maker sprite sheet added into the game? Check out my commission portfolio and order custom sprites at <a href="https://vgen.co/billy_bones999" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: 700; text-decoration: underline;">VGen (billy_bones999)</a>!</p>
+                </section>
             </div>
         </main>
         
@@ -492,6 +522,7 @@
         const selectedName = document.getElementById('selectedName'), selectedDesc = document.getElementById('selectedDesc'), selectedStatus = document.getElementById('selectedStatus');
         const charPickerWrap = document.getElementById('charPickerWrap'), charSelect = document.getElementById('charSelect');
         const fsCharOverlay = document.getElementById('fsCharOverlay'), fsCharSelect = document.getElementById('fsCharSelect');
+        const fsAddBtn = document.getElementById('fsAddBtn'), fsRemoveBtn = document.getElementById('fsRemoveBtn');
 
         const lofiAudio = document.getElementById('lofiAudio');
         const radioBtn = document.getElementById('radioBtn');
@@ -1120,7 +1151,8 @@
             setTimeout(resize, 100);
         });
 
-        addBtn.addEventListener('click', () => {
+        // Fungsi Tambah Karakter
+        function handleAddCharacter() {
             if (actors.length >= 10) {
                 selectedName.textContent = 'Character limit reached';
                 selectedDesc.textContent = 'Prototype is limited to a maximum of 10 characters.';
@@ -1133,36 +1165,43 @@
             actors.push(selected);
             showSelected(selected);
             updateHud();
-        });
-
-        removeBtn.addEventListener('click', () => {
-    if (actors.length <= 1) {
-        selectedName.textContent = 'Minimum limit reached';
-        selectedDesc.textContent = 'The world must keep at least 1 inhabitant.';
-        selectedStatus.textContent = 'Minimum limit';
-        charPickerWrap.style.display = 'none';
-        fsCharOverlay.style.display = 'none';
-        return;
-    }
-
-    if (selected) {
-        // Hapus karakter yang sedang dipilih (selected)
-        const index = actors.indexOf(selected);
-        if (index !== -1) {
-            actors.splice(index, 1);
         }
-        selected = null;
-        showSelected(null);
-    } else {
-        // Jika tidak ada yang dipilih, hapus karakter paling terakhir
-        const removed = actors.pop();
-        if (selected === removed) {
-            selected = null;
-            showSelected(null);
+
+        // Fungsi Hapus Karakter (Unselect jika karakter sedang dipilih)
+        function handleRemoveCharacter() {
+            if (actors.length <= 1) {
+                selectedName.textContent = 'Minimum limit reached';
+                selectedDesc.textContent = 'The world must keep at least 1 inhabitant.';
+                selectedStatus.textContent = 'Minimum limit';
+                charPickerWrap.style.display = 'none';
+                fsCharOverlay.style.display = 'none';
+                return;
+            }
+
+            if (selected) {
+                // Hapus karakter yang sedang dipilih (selected)
+                const index = actors.indexOf(selected);
+                if (index !== -1) {
+                    actors.splice(index, 1);
+                }
+                selected = null;
+                showSelected(null);
+            } else {
+                // Jika tidak ada yang dipilih, hapus karakter paling terakhir
+                const removed = actors.pop();
+                if (selected === removed) {
+                    selected = null;
+                    showSelected(null);
+                }
+            }
+            updateHud();
         }
-    }
-    updateHud();
-});
+
+        addBtn.addEventListener('click', handleAddCharacter);
+        fsAddBtn.addEventListener('click', handleAddCharacter);
+
+        removeBtn.addEventListener('click', handleRemoveCharacter);
+        fsRemoveBtn.addEventListener('click', handleRemoveCharacter);
 
         resetBtn.addEventListener('click', () => { paused = false; reset(); updateHud(); });
         window.addEventListener('resize', resize);

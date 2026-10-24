@@ -3,7 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Living Pixel World — Top-Down Prototype</title>
+    <title>Living Pixel World — Top-Down Prototype by Beruang Games</title>
+    
+    <!-- Meta Tags SEO & Sosial Media -->
+    <meta name="description" content="Interactive top-down pixel art world prototype with smart navigation, ambient lighting, lofi radio, and a dynamic day-night cycle. Created by beruang games.">
+    <meta name="author" content="billybones999">
+    <meta name="keywords" content="pixel art, top down rpg, html5 canvas game, lofi web app, beruang games">
+    
+    <!-- Open Graph / Sosial Media (Discord, WhatsApp, Telegram, dll) -->
+    <meta property="og:title" content="Living Pixel World — Top-Down Prototype">
+    <meta property="og:description" content="Explore an interactive pixel world with smart autonomous characters, lofi background beats, and dynamic weather/time cycles.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://beruang-tidur.itch.io/">
+    
     <style>
         :root {
             color-scheme: dark;
@@ -105,6 +117,26 @@
             box-shadow: 0 0px 55px #0005;
         }
 
+        /* Styling khusus saat elemen world-wrap masuk mode Fullscreen */
+        .world-wrap:fullscreen {
+            border: none;
+            border-radius: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #101a17;
+        }
+
+        .world-wrap:-webkit-full-screen {
+            border: none;
+            border-radius: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
         canvas {
             display: block;
             width: 100%;
@@ -112,6 +144,11 @@
             min-height: 380px;
             image-rendering: pixelated;
             cursor: crosshair;
+        }
+
+        .world-wrap:fullscreen canvas {
+            height: 100vh;
+            max-height: 100vh;
         }
 
         .hud {
@@ -247,6 +284,7 @@
                 <button id="pauseBtn">⏸ Pause</button>
                 <button id="addBtn">＋ Add</button>
                 <button id="removeBtn">－ Remove</button>
+                <button id="fullscreenBtn">⛶ Fullscreen</button>
                 <button id="resetBtn">↻ Reset</button>
             </div>
         </header>
@@ -392,10 +430,9 @@
         const DISPLAY_SCALE = 2;
         const CELL_W = 32, CELL_H = 48;
 
-        // Memuat Aset PNG Latar Belakang & Dekorasi
         const decorImages = {
             tree: (() => { const img = new Image(); img.src = 'asset/tileset/tree.png'; return img; })(),
-	    bench: (() => { const img = new Image(); img.src = 'asset/tileset/bench.png'; return img; })(),
+            bench: (() => { const img = new Image(); img.src = 'asset/tileset/bench.png'; return img; })(),
             lamp: (() => { const img = new Image(); img.src = 'asset/tileset/lamp.png'; return img; })(),  
             grass: (() => { const img = new Image(); img.src = 'asset/tileset/grass.png'; return img; })(),
             grassway: (() => { const img = new Image(); img.src = 'asset/tileset/grassway.png'; return img; })()
@@ -403,6 +440,7 @@
         
         const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
         const pauseBtn = document.getElementById('pauseBtn'), addBtn = document.getElementById('addBtn'), removeBtn = document.getElementById('removeBtn'), resetBtn = document.getElementById('resetBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn'), worldWrap = document.getElementById('worldWrap');
         const countPill = document.getElementById('countPill'), statePill = document.getElementById('statePill'), timePill = document.getElementById('timePill');
         const selectedName = document.getElementById('selectedName'), selectedDesc = document.getElementById('selectedDesc'), selectedStatus = document.getElementById('selectedStatus');
         const charPickerWrap = document.getElementById('charPickerWrap'), charSelect = document.getElementById('charSelect');
@@ -497,31 +535,30 @@
         }
 
         function makeDecor() {
-    decor = [];
+            decor = [];
 
-    // Pohon (Selalu ada di semua perangkat)
-    decor.push(
-        { x: W * .15, y: H * .25, type: 'tree', solid: true, radius: 24 },
-        { x: W * .85, y: H * .28, type: 'tree', solid: true, radius: 24 },
-        { x: W * .20, y: H * .90, type: 'tree', solid: true, radius: 24 },
-        { x: W * .80, y: H * .90, type: 'tree', solid: true, radius: 24 }
-    );
+            // Pohon (Selalu ada di semua perangkat)
+            decor.push(
+                { x: W * .15, y: H * .25, type: 'tree', solid: true, radius: 24 },
+                { x: W * .85, y: H * .28, type: 'tree', solid: true, radius: 24 },
+                { x: W * .20, y: H * .90, type: 'tree', solid: true, radius: 24 },
+                { x: W * .80, y: H * .90, type: 'tree', solid: true, radius: 24 }
+            );
 
-    // Kursi Taman (bench.png) - HANYA dimunculkan jika lebar layar di atas 768px (Laptop/PC)
-    // Jika dibuka di ponsel (layar < 768px), bench tidak akan dimasukkan ke dalam game
-    if (W > 768) {
-        decor.push(
-            { x: W * .38, y: H * .38, type: 'bench', solid: true, radius: 20 },
-            { x: W * .62, y: H * .38, type: 'bench', solid: true, radius: 20 }
-        );
-    }
+            // Kursi Taman (bench.png) - HANYA dimunculkan jika lebar layar > 768px (Menghindari tabrakan di HP)
+            if (W > 768) {
+                decor.push(
+                    { x: W * .38, y: H * .38, type: 'bench', solid: true, radius: 20 },
+                    { x: W * .62, y: H * .38, type: 'bench', solid: true, radius: 20 }
+                );
+            }
 
-    // Lampu Jalan
-    decor.push(
-        { x: W * .26, y: H * .38, type: 'lamp', solid: true, radius: 14 },
-        { x: W * .74, y: H * .38, type: 'lamp', solid: true, radius: 14 }
-    );
-}
+            // Lampu Jalan
+            decor.push(
+                { x: W * .26, y: H * .38, type: 'lamp', solid: true, radius: 14 },
+                { x: W * .74, y: H * .38, type: 'lamp', solid: true, radius: 14 }
+            );
+        }
 
         function getSafeSpawnPosition() {
             let x, y, safe = false;
@@ -633,7 +670,6 @@
             ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
         }
 
-        // Render Objek Dekorasi
         function drawDecorItem(d) {
             const img = decorImages[d.type];
             if (!img || !img.complete || !img.naturalWidth) return;
@@ -653,7 +689,6 @@
             );
         }
 
-        // Pendaran Cahaya Lampu di Malam Hari
         function drawLampGlow(x, y, isNightOrEvening) {
             if (!isNightOrEvening) return;
 
@@ -678,11 +713,9 @@
             ctx.restore();
         }
 
-        // Menggambar Latar Belakang Rumput + Jalan Setapak (grassway.png)
         function background() {
             ctx.imageSmoothingEnabled = false;
 
-            // 1. Render Rumput Utama (grass.png)
             const grassImg = decorImages.grass;
             if (grassImg && grassImg.complete && grassImg.naturalWidth > 0) {
                 const tileW = grassImg.width;
@@ -692,46 +725,35 @@
 
                 for (let y = 0; y < H; y += renderH) {
                     for (let x = 0; x < W; x += renderW) {
-                        ctx.drawImage(
-                            grassImg, 
-                            0, 0, tileW, tileH, 
-                            x, y, renderW, renderH
-                        );
+                        ctx.drawImage(grassImg, 0, 0, tileW, tileH, x, y, renderW, renderH);
                     }
                 }
             } else {
                 rect(0, 0, W, H, '#71a35f');
             }
 
-            // 2. Render Jalan Setapak dari grassway.png (2x2 tileset 48x48)
             const wayImg = decorImages.grassway;
             if (wayImg && wayImg.complete && wayImg.naturalWidth > 0) {
-                const tileSize = 48; // Ukuran asli tile
-                const renderTileSize = tileSize * DISPLAY_SCALE; // 96px di layar
-                const wayY = H * 0.40; // Posisi Y jalan setapak di tengah peta
+                const tileSize = 48;
+                const renderTileSize = tileSize * DISPLAY_SCALE;
+                const wayY = H * 0.40;
 
-                // Menggambar Jalan Setapak Memanjang dari Kiri ke Kanan
                 for (let x = 0; x < W; x += renderTileSize) {
                     let topSrcX = 24, topSrcY = 0;
                     let botSrcX = 24, botSrcY = 48;
 
                     if (x === 0) {
-                        // Ujung Paling Kiri Jalan (Mengambil potongan Kiri-Atas & Kiri-Bawah)
                         topSrcX = 24; topSrcY = 0;
                         botSrcX = 24; botSrcY = 48;
                     } else if (x + renderTileSize >= W) {
-                        // Ujung Paling Kanan Jalan (Mengambil potongan Kanan-Atas & Kanan-Bawah)
                         topSrcX = 48; topSrcY = 0;
                         botSrcX = 48; botSrcY = 48;
                     } else {
-                        // Badan Tengah Jalan (Mengambil potongan dalam tanah tanpa pinggiran rumput vertikal)
                         topSrcX = 24; topSrcY = 0;
                         botSrcX = 24; botSrcY = 48;
                     }
 
-                    // Baris Atas Jalan
                     ctx.drawImage(wayImg, topSrcX, topSrcY, tileSize, tileSize, x, wayY, renderTileSize, renderTileSize);
-                    // Baris Bawah Jalan
                     ctx.drawImage(wayImg, botSrcX, botSrcY, tileSize, tileSize, x, wayY + renderTileSize, renderTileSize, renderTileSize);
                 }
             }
@@ -774,8 +796,6 @@
             const sw = CELL_W, sh = CELL_H, scale = DISPLAY_SCALE, dw = sw * scale, dh = sh * scale;
             const sx = a.frame * CELL_W, sy = a.dir * CELL_H;
             
-            
-
             if (a === selected) {
                 ctx.strokeStyle = '#ffe17c';
                 ctx.lineWidth = 2;
@@ -830,12 +850,12 @@
                         if (d.solid) {
                             if (d.type === 'bench') {
                                 const img = decorImages.bench;
-                                const benchW = (img && img.complete && img.naturalWidth) ? (img.width * DISPLAY_SCALE) : 64;
-                                const benchH = 16 * DISPLAY_SCALE;
-                                const halfW = benchW / 2 + 10;
-                                const halfH = benchH / 2 + 8;
+                                const benchW = (img && img.complete && img.naturalWidth) ? (img.width * DISPLAY_SCALE * 0.8) : 50;
+                                const benchH = 20 * DISPLAY_SCALE;
+                                const halfW = benchW / 2;
+                                const halfH = benchH / 2;
 
-                                if (Math.abs(nextX - d.x) < halfW && Math.abs((nextY - 8) - d.y) < halfH) {
+                                if (Math.abs(nextX - d.x) < halfW && Math.abs(nextY - (d.y - 4)) < halfH) {
                                     collided = true;
                                     break;
                                 }
@@ -987,6 +1007,32 @@
 
         pauseBtn.addEventListener('click', () => { paused = !paused; updateHud(); });
         
+        // Fitur Tombol Fullscreen
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                if (worldWrap.requestFullscreen) {
+                    worldWrap.requestFullscreen();
+                } else if (worldWrap.webkitRequestFullscreen) { /* Safari */
+                    worldWrap.webkitRequestFullscreen();
+                }
+                fullscreenBtn.textContent = '⛶ Exit Fullscreen';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                }
+                fullscreenBtn.textContent = '⛶ Fullscreen';
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                fullscreenBtn.textContent = '⛶ Fullscreen';
+            }
+            setTimeout(resize, 100);
+        });
+
         addBtn.addEventListener('click', () => {
             if (actors.length >= 10) {
                 selectedName.textContent = 'Character limit reached';

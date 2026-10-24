@@ -1,0 +1,1029 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Living Pixel World — Top-Down Prototype</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --ink: #f4f0d9;
+            --muted: #bac8b4;
+            --panel: #17251f;
+            --panel2: #24382c;
+            --accent: #f4ce68;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #101a17;
+            color: var(--ink);
+            font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        }
+
+        .app {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: .78rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        h1 {
+            margin: 4px 0 6px;
+            font-size: clamp(1.7rem, 4vw, 2.5rem);
+            line-height: 1.05;
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            max-width: 670px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        button, select {
+            border: 1px solid #526b54;
+            color: var(--ink);
+            background: var(--panel2);
+            border-radius: 10px;
+            padding: 10px 13px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        button:hover, select:hover {
+            border-color: var(--accent);
+        }
+
+        button:focus-visible, select:focus-visible {
+            outline: 3px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        select {
+            appearance: none;
+            padding-right: 30px;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.36%22%20height%3D%22292.36%22%3E%3Cpath%20fill%3D%22%23f4f0d9%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 10px;
+        }
+
+        .world-wrap {
+            position: relative;
+            border: 3px solid #344c38;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #8fc56f;
+            box-shadow: 0 0px 55px #0005;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: min(70vh, 680px);
+            min-height: 380px;
+            image-rendering: pixelated;
+            cursor: crosshair;
+        }
+
+        .hud {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            pointer-events: none;
+        }
+
+        .pill {
+            background: #13251de8;
+            border: 1px solid #ffffff26;
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: .8rem;
+        }
+
+        .hint {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .hint span {
+            display: inline-block;
+            background: #13251de8;
+            padding: 8px 12px;
+            border-radius: 999px;
+            color: #e9efd9;
+            font-size: .83rem;
+        }
+
+        .below {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid #304637;
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .panel h2 {
+            margin: 0 0 8px;
+            font-size: 1.05rem;
+        }
+
+        .panel p {
+            color: var(--muted);
+            margin: 0;
+            line-height: 1.55;
+            font-size: .93rem;
+        }
+
+        .selected-name {
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 10px;
+            border-radius: 7px;
+            padding: 5px 8px;
+            background: #294333;
+            color: #dcefd6;
+            font-size: .8rem;
+        }
+
+        .char-picker-wrap {
+            margin-top: 14px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .char-picker-wrap label {
+            font-size: .82rem;
+            color: var(--accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .char-picker-wrap select {
+            width: 100%;
+            max-width: 260px;
+        }
+
+        footer {
+            color: #8fa18e;
+            font-size: .8rem;
+            margin: 14px 2px 0;
+        }
+
+        @media(max-width: 700px) {
+            .app { padding: 12px; }
+            .below { grid-template-columns: 1fr; }
+            canvas { height: 58vh; min-height: 360px; }
+            .toolbar button, .toolbar select { padding: 9px 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div>
+                <div class="eyebrow">Top-down RPG style</div>
+                <h1>Living Pixel World <span aria-hidden="true">🌱</span></h1>
+                <p>Interactive characters with smart navigation, ambient lighting layers, lofi background music, and a dynamic day-night cycle.</p>
+            </div>
+            <div class="toolbar">
+                <select id="stationSelect" aria-label="Lofi Radio Station">
+                    <option value="https://stream.zeno.fm/f3wvbbqmdg8uv">☕ Lofi Chill Beats</option>
+                    <option value="https://stream.zeno.fm/0r0xa792kwzuv">🌙 Sleepy Lofi / Study</option>
+                    <option value="https://stream.zeno.fm/f3wvbbqmdg8uv">🎧 Jazz & Lofi Cafe</option>
+                    <option value="https://ic1.sslstream.di.fm/di_chillout_aac">🌿 Ambient Chillout</option>
+                    <option value="https://stream.zeno.fm/tv8w2bedvv8uv">☕ Lofi Hip Hop Radio</option>
+                </select>
+                <button id="radioBtn">⏹ Turn Off Music</button>
+                <button id="pauseBtn">⏸ Pause</button>
+                <button id="addBtn">＋ Add</button>
+                <button id="removeBtn">－ Remove</button>
+                <button id="resetBtn">↻ Reset</button>
+            </div>
+        </header>
+        
+        <main>
+            <div class="world-wrap" id="worldWrap">
+                <canvas id="world" aria-label="Interactive top-down pixel art world"></canvas>
+                <div class="hud">
+                    <span class="pill" id="countPill">👣 5 characters</span>
+                    <span class="pill" id="timePill">⏰ 00:00 (Morning)</span>
+                    <span class="pill" id="statePill">● Active world</span>
+                </div>
+                <div class="hint">
+                    <span>Click a character to select · Click ground to deselect</span>
+                </div>
+            </div>
+            
+            <div class="below">
+                <section class="panel" aria-live="polite">
+                    <h2>Selected Character</h2>
+                    <div class="selected-name" id="selectedName">Select an inhabitant</div>
+                    <p id="selectedDesc">Characters navigate in four directions using RPG Maker sprite sheet frames.</p>
+                    <div><span class="status" id="selectedStatus">No selection</span></div>
+                    
+                    <div class="char-picker-wrap" id="charPickerWrap">
+                        <label for="charSelect">Switch Character Sprite:</label>
+                        <select id="charSelect" aria-label="Choose Character Sprite"></select>
+                    </div>
+                </section>
+                
+                <section class="panel">
+                    <h2>Smart Interactive Features</h2>
+                    <p>Maximum characters allowed: 10. Ambient sunset and night color overlays are rendered over the scene to maintain natural grass colors.</p>
+                </section>
+            </div>
+        </main>
+        
+        <footer>HTML + CSS + JavaScript · Sprite sheets loaded from <code>asset/</code> folder.</footer>
+    </div>
+
+    <!-- Lofi Radio Audio Element -->
+    <audio id="lofiAudio" loop></audio>
+
+    <script>
+    (() => {
+        const SPRITES = [
+            { name: 'Annie', data: 'asset/annie.png', description: 'To be Special! Character' },
+            { name: 'Annie', data: 'asset/annie(chess).png', description: 'To be Special! Character' },
+            { name: 'Annie', data: 'asset/annie(costume kumako).png', description: 'To be Special! Character' },
+            { name: 'Annie', data: 'asset/annie(school).png', description: 'To be Special! Character' },
+            { name: 'Billy', data: 'asset/billy.png', description: 'To be Special! Character' },
+            { name: 'Billy', data: 'asset/billy(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Billy', data: 'asset/billy(chess).png', description: 'To be Special! Character' },
+            { name: 'Billy', data: 'asset/billy(costume beruangtidur).png', description: 'To be Special! Character' },
+            { name: 'Billy', data: 'asset/billy(costume clown).png', description: 'To be Special! Character' },
+            { name: 'Billy', data: 'asset/billy(costume pig).png', description: 'To be Special! Character' },
+            { name: 'Billy', data: 'asset/billy(costume prisoner).png', description: 'To be Special! Character' },
+            { name: 'Billy Old', data: 'asset/billy old.png', description: 'To be Special! Character' },
+            { name: 'Billy', data: 'asset/billy(pajamas).png', description: 'To be Special! Character' },
+            { name: 'Billy', data: 'asset/billy(school).png', description: 'To be Special! Character' },
+            { name: 'Bobby', data: 'asset/bobby.png', description: 'To be Special! Character' },
+            { name: 'Bobby', data: 'asset/bobby(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Bobby', data: 'asset/bobby(chess).png', description: 'To be Special! Character' },
+            { name: 'Bogga', data: 'asset/bogga.png', description: 'Station on My Screen Character' },
+            { name: 'Cat', data: 'asset/cat.png', description: 'To be Special! Character' },
+            { name: 'Chicken', data: 'asset/chicken.png', description: 'To be Special! Character' },
+            { name: 'Cia', data: 'asset/cia(school).png', description: 'To be Special! Character' },
+            { name: 'Cleo', data: 'asset/cleo.png', description: 'Station on My Screen Character' },
+            { name: 'Cleo', data: 'asset/cleo(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Cloak Girl', data: 'asset/cloak girl(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Clown Girl', data: 'asset/clown girl(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Dog', data: 'asset/dog.png', description: 'To be Special! Character' },
+            { name: 'Doll Black Bear', data: 'asset/doll black bear.png', description: 'To be Special! Character' },
+            { name: 'Doll Eagle', data: 'asset/doll eagle.png', description: 'To be Special! Character' },
+            { name: 'Doll Elephant', data: 'asset/doll elephant.png', description: 'To be Special! Character' },
+            { name: 'Doll Penguin', data: 'asset/doll penguin.png', description: 'To be Special! Character' },
+            { name: 'Ellie', data: 'asset/ellie(school).png', description: 'To be Special! Character' },
+            { name: 'Emily', data: 'asset/emily.png', description: 'To be Special! Character' },
+            { name: 'Emily', data: 'asset/emily(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Emily', data: 'asset/emily(chess).png', description: 'To be Special! Character' },
+            { name: 'Emily', data: 'asset/emily(costume elephant).png', description: 'To be Special! Character' },
+            { name: 'Emily', data: 'asset/emily(costume girl).png', description: 'To be Special! Character' },
+            { name: 'Emily', data: 'asset/emily(costume pig).png', description: 'To be Special! Character' },
+            { name: 'Emily', data: 'asset/emily(school).png', description: 'To be Special! Character' },
+            { name: 'Erina', data: 'asset/erina.png', description: 'To be Special! Character' },
+            { name: 'Erina', data: 'asset/erina(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Erina', data: 'asset/erina(chess).png', description: 'To be Special! Character' },
+            { name: 'Erina', data: 'asset/erina(costume penguin).png', description: 'To be Special! Character' },
+            { name: 'Erina', data: 'asset/erina(school).png', description: 'To be Special! Character' },
+            { name: 'Gilga', data: 'asset/gilga(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Johan', data: 'asset/johan.png', description: 'To be Special! Character' },
+            { name: 'Johan', data: 'asset/johan(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Johan', data: 'asset/johan(chess).png', description: 'To be Special! Character' },
+            { name: 'Johan', data: 'asset/johan(school).png', description: 'To be Special! Character' },
+            { name: 'Jolly', data: 'asset/jolly.png', description: 'To be Special! Character' },
+            { name: 'Jolly', data: 'asset/jolly(cloak).png', description: 'To be Special! Character' },
+            { name: 'Jonathan', data: 'asset/jonathan.png', description: 'To be Special! Character' },
+            { name: 'Jonathan', data: 'asset/jonathan(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Jonathan', data: 'asset/jonathan(chess).png', description: 'To be Special! Character' },
+            { name: 'Jonathan', data: 'asset/jonathan(costume clown).png', description: 'To be Special! Character' },
+            { name: 'Jonathan', data: 'asset/jonathan(school).png', description: 'To be Special! Character' },
+            { name: 'Jojo', data: 'asset/jojo.png', description: 'Purr-haps Next Time Character' },
+            { name: 'Juniper', data: 'asset/juniper(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Kumako', data: 'asset/kumako.png', description: 'To be Special! Character' },
+            { name: 'Kumako', data: 'asset/kumako(chess).png', description: 'To be Special! Character' },
+            { name: 'Layla', data: 'asset/layla.png', description: 'To be Special! Character' },
+            { name: 'Leo', data: 'asset/leo.png', description: 'To be Special! Character' },
+            { name: 'Lily', data: 'asset/lily(school).png', description: 'To be Special! Character' },
+            { name: 'Lita', data: 'asset/lita.png', description: 'Purr-haps Next Time Character' },
+            { name: 'Lita Dad', data: 'asset/lita dad.png', description: 'Purr-haps Next Time Character' },
+            { name: 'Lita', data: 'asset/lita(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Lucy', data: 'asset/lucy.png', description: 'Purr-haps Next Time Character' },
+            { name: 'Mai', data: 'asset/mai.png', description: 'To be Special! Character' },
+            { name: 'Mai', data: 'asset/mai(chess).png', description: 'To be Special! Character' },
+            { name: 'Mai', data: 'asset/mai(costume eagle).png', description: 'To be Special! Character' },
+            { name: 'Mai', data: 'asset/mai(school).png', description: 'To be Special! Character' },
+            { name: 'Marina', data: 'asset/marina.png', description: 'To be Special! Character' },
+            { name: 'Mary', data: 'asset/mary.png', description: 'To be Special! Character' },
+            { name: 'Miky', data: 'asset/miky.png', description: 'To be Special! Character' },
+            { name: 'Nana', data: 'asset/nana.png', description: 'To be Special! Character' },
+            { name: 'Rika', data: 'asset/rika.png', description: 'To be Special! Character' },
+            { name: 'Rika', data: 'asset/rika(chess).png', description: 'To be Special! Character' },
+            { name: 'Rika', data: 'asset/rika(costume godzilla).png', description: 'To be Special! Character' },
+            { name: 'Rika Old', data: 'asset/rika old.png', description: 'To be Special! Character' },
+            { name: 'Rika', data: 'asset/rika(school).png', description: 'To be Special! Character' },
+            { name: 'Ronald', data: 'asset/ronald.png', description: 'To be Special! Character' },
+            { name: 'Ronald', data: 'asset/ronald(chess).png', description: 'To be Special! Character' },
+            { name: 'Save Bot', data: 'asset/save bot.png', description: 'Station on My Screen Character' },
+            { name: 'Sera', data: 'asset/sera(school).png', description: 'To be Special! Character' },
+            { name: 'Sindri', data: 'asset/sindri(chess).png', description: 'To be Special! Character' },
+            { name: 'Sindri', data: 'asset/sindri(school).png', description: 'To be Special! Character' },
+            { name: 'Smile Man', data: 'asset/smile man.png', description: 'Station on My Screen Character' },
+            { name: 'Timo', data: 'asset/timo.png', description: 'To be Special! Character' },
+            { name: 'Toby', data: 'asset/toby.png', description: 'Station on My Screen Character' },
+            { name: 'Toby', data: 'asset/toby(bey-bread).png', description: 'Bey-Bread Character' },
+            { name: 'Writer', data: 'asset/writer.png', description: 'To be Special! Character' },
+            { name: 'BeruangTidur', data: 'asset/beruangtidur.png', description: 'Developer' },
+            { name: 'BeruangTidur', data: 'asset/beruangtidur roblox.png', description: 'Developer' },
+            { name: 'BLACK', data: 'asset/BLACK.png', description: '-' },
+            { name: 'WHITE', data: 'asset/WHITE.png', description: '-' }
+        ];
+
+        const DISPLAY_SCALE = 2;
+        const CELL_W = 32, CELL_H = 48;
+
+        // Memuat Aset PNG Latar Belakang & Dekorasi
+        const decorImages = {
+            tree: (() => { const img = new Image(); img.src = 'asset/tileset/tree.png'; return img; })(),
+	    bench: (() => { const img = new Image(); img.src = 'asset/tileset/bench.png'; return img; })(),
+            lamp: (() => { const img = new Image(); img.src = 'asset/tileset/lamp.png'; return img; })(),  
+            grass: (() => { const img = new Image(); img.src = 'asset/tileset/grass.png'; return img; })(),
+            grassway: (() => { const img = new Image(); img.src = 'asset/tileset/grassway.png'; return img; })()
+        };
+        
+        const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
+        const pauseBtn = document.getElementById('pauseBtn'), addBtn = document.getElementById('addBtn'), removeBtn = document.getElementById('removeBtn'), resetBtn = document.getElementById('resetBtn');
+        const countPill = document.getElementById('countPill'), statePill = document.getElementById('statePill'), timePill = document.getElementById('timePill');
+        const selectedName = document.getElementById('selectedName'), selectedDesc = document.getElementById('selectedDesc'), selectedStatus = document.getElementById('selectedStatus');
+        const charPickerWrap = document.getElementById('charPickerWrap'), charSelect = document.getElementById('charSelect');
+
+        const lofiAudio = document.getElementById('lofiAudio');
+        const radioBtn = document.getElementById('radioBtn');
+        const stationSelect = document.getElementById('stationSelect');
+        let isPlayingRadio = true;
+
+        const dialogues = [
+            "Hello there!", "Nice weather today~", "What are you up to?", 
+            "Whew... a bit tired.", "Hmm...", "Hey friend!", 
+            "Let's take a walk!", "Lovely place, isn't it?"
+        ];
+
+        SPRITES.forEach((s, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = `${s.name} (${s.data.split('/')[1]})`;
+            charSelect.appendChild(opt);
+        });
+
+        function startMusic() {
+            lofiAudio.src = stationSelect.value;
+            lofiAudio.play().then(() => {
+                isPlayingRadio = true;
+                radioBtn.textContent = '⏹ Turn Off Music';
+            }).catch(() => {
+                isPlayingRadio = false;
+                radioBtn.textContent = '▶ Play Music';
+                const enableAudioOnClick = () => {
+                    lofiAudio.play().then(() => {
+                        isPlayingRadio = true;
+                        radioBtn.textContent = '⏹ Turn Off Music';
+                        window.removeEventListener('click', enableAudioOnClick);
+                    });
+                };
+                window.addEventListener('click', enableAudioOnClick, { once: true });
+            });
+        }
+
+        radioBtn.addEventListener('click', () => {
+            if (!isPlayingRadio) {
+                lofiAudio.src = stationSelect.value;
+                lofiAudio.play().then(() => {
+                    isPlayingRadio = true;
+                    radioBtn.textContent = '⏹ Turn Off Music';
+                });
+            } else {
+                lofiAudio.pause();
+                isPlayingRadio = false;
+                radioBtn.textContent = '▶ Play Music';
+            }
+        });
+
+        stationSelect.addEventListener('change', () => {
+            if (isPlayingRadio) {
+                lofiAudio.src = stationSelect.value;
+                lofiAudio.play();
+            }
+        });
+
+        const images = SPRITES.map(s => {
+            const im = new Image();
+            im.src = s.data;
+            return im;
+        });
+
+        let W = 900, H = 560, dpr = 1, actors = [], decor = [], paused = false, selected = null, last = 0, elapsed = 0, nextId = 0;
+
+        function getTimeTheme(hour) {
+            if (hour >= 4 && hour < 10) {
+                return { name: 'Morning', skyOverlay: 'rgba(255, 220, 130, 0.12)' };
+            } else if (hour >= 10 && hour < 15) {
+                return { name: 'Noon', skyOverlay: 'rgba(0, 0, 0, 0)' };
+            } else if (hour >= 15 && hour < 18) {
+                return { name: 'Evening', skyOverlay: 'rgba(235, 120, 40, 0.22)' };
+            } else {
+                return { name: 'Night', skyOverlay: 'rgba(15, 25, 45, 0.5)' };
+            }
+        }
+
+        function resize() {
+            const r = canvas.getBoundingClientRect();
+            dpr = Math.min(devicePixelRatio || 1, 2);
+            canvas.width = Math.round(r.width * dpr);
+            canvas.height = Math.round(r.height * dpr);
+            W = r.width;
+            H = r.height;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            makeDecor();
+        }
+
+        function makeDecor() {
+            decor = [];
+
+            // Pohon
+            decor.push(
+                { x: W * .15, y: H * .25, type: 'tree', solid: true, radius: 24 },
+                { x: W * .85, y: H * .28, type: 'tree', solid: true, radius: 24 },
+                { x: W * .20, y: H * .90, type: 'tree', solid: true, radius: 24 },
+                { x: W * .80, y: H * .90, type: 'tree', solid: true, radius: 24 }
+            );
+
+            // Kursi Taman (Diposisikan di samping jalan)
+            decor.push(
+                { x: W * .38, y: H * .38, type: 'bench', solid: true, radius: 20 },
+                { x: W * .62, y: H * .38, type: 'bench', solid: true, radius: 20 }
+            );
+
+            // Lampu Jalan
+            decor.push(
+                { x: W * .26, y: H * .38, type: 'lamp', solid: true, radius: 14 },
+                { x: W * .74, y: H * .38, type: 'lamp', solid: true, radius: 14 }
+            );
+        }
+
+        function getSafeSpawnPosition() {
+            let x, y, safe = false;
+            let attempts = 0;
+            while (!safe && attempts < 50) {
+                attempts++;
+                x = 70 + Math.random() * Math.max(100, W - 140);
+                y = 90 + Math.random() * Math.max(100, H - 170);
+                
+                safe = true;
+                for (const d of decor) {
+                    if (d.solid) {
+                        const dist = Math.hypot(x - d.x, y - d.y);
+                        if (dist < d.radius + 15) {
+                            safe = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            return { x, y };
+        }
+
+        function makeActor(forcedKind = null) {
+            const kind = forcedKind !== null ? forcedKind : Math.floor(Math.random() * SPRITES.length); 
+            const im = images[kind];
+            const posSpawn = getSafeSpawnPosition();
+            return {
+                id: ++nextId,
+                name: SPRITES[kind].name,
+                kind,
+                x: posSpawn.x,
+                y: posSpawn.y,
+                vx: 0, vy: 0,
+                speed: 20 + Math.random() * 16,
+                dir: 0,
+                state: 'idle',
+                timer: .4 + Math.random() * 2,
+                frame: 1,
+                frameTimer: 0,
+                hello: 0,
+                dialogueText: '',
+                im
+            };
+        }
+
+        function reset() {
+            actors = [];
+            const defaultAssetPaths = [
+                'asset/billy.png',
+                'asset/emily.png',
+                'asset/rika.png',
+                'asset/johan.png',
+                'asset/mai.png'
+            ];
+            
+            defaultAssetPaths.forEach(path => {
+                const foundIndex = SPRITES.findIndex(s => s.data === path);
+                if (foundIndex !== -1) {
+                    actors.push(makeActor(foundIndex));
+                }
+            });
+
+            selected = null;
+            showSelected(null);
+            updateHud();
+        }
+
+        function updateHud() {
+            const now = new Date();
+            const h = now.getHours();
+            const m = now.getMinutes();
+            const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            const theme = getTimeTheme(h);
+
+            countPill.textContent = `👣 ${actors.length} character${actors.length > 1 ? 's' : ''}`;
+            timePill.textContent = `⏰ ${timeStr} (${theme.name})`;
+            statePill.textContent = paused ? 'Ⅱ World Paused' : '● World Active';
+            pauseBtn.textContent = paused ? '▶ Resume' : '⏸ Pause';
+        }
+
+        function showSelected(a) {
+            if (!a) {
+                selectedName.textContent = 'Select an inhabitant';
+                selectedDesc.textContent = 'Characters navigate in four directions using RPG Maker sprite sheet frames.';
+                selectedStatus.textContent = 'No selection';
+                charPickerWrap.style.display = 'none';
+                return;
+            }
+            selectedName.textContent = a.name;
+            selectedDesc.textContent = SPRITES[a.kind].description + '.';
+            selectedStatus.textContent = a.state === 'walk' ? 'Walking' : a.hello > 0 ? 'Greeting' : 'Resting';
+            
+            charSelect.value = a.kind;
+            charPickerWrap.style.display = 'flex';
+        }
+
+        charSelect.addEventListener('change', (e) => {
+            if (!selected) return;
+            const newKind = parseInt(e.target.value, 10);
+            selected.kind = newKind;
+            selected.name = SPRITES[newKind].name;
+            selected.im = images[newKind];
+            showSelected(selected);
+        });
+
+        function rect(x, y, w, h, c) {
+            ctx.fillStyle = c;
+            ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+        }
+
+        // Render Objek Dekorasi
+        function drawDecorItem(d) {
+            const img = decorImages[d.type];
+            if (!img || !img.complete || !img.naturalWidth) return;
+
+            const s = DISPLAY_SCALE;
+            const imgW = img.width * s;
+            const imgH = img.height * s;
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(
+                img, 
+                0, 0, img.width, img.height, 
+                Math.round(d.x - imgW / 2), 
+                Math.round(d.y - imgH), 
+                imgW, 
+                imgH
+            );
+        }
+
+        // Pendaran Cahaya Lampu di Malam Hari
+        function drawLampGlow(x, y, isNightOrEvening) {
+            if (!isNightOrEvening) return;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            
+            const img = decorImages.lamp;
+            const lampH = img && img.complete && img.naturalHeight ? img.height * DISPLAY_SCALE : 36 * DISPLAY_SCALE;
+            const lampX = x;
+            const lampY = y - lampH + (8 * DISPLAY_SCALE);
+            const glowRadius = 110;
+
+            const grad = ctx.createRadialGradient(lampX, lampY, 5, lampX, lampY, glowRadius);
+            grad.addColorStop(0, 'rgba(255, 225, 130, 0.5)');
+            grad.addColorStop(0.5, 'rgba(255, 200, 90, 0.2)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(lampX, lampY, glowRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Menggambar Latar Belakang Rumput + Jalan Setapak (grassway.png)
+        function background() {
+            ctx.imageSmoothingEnabled = false;
+
+            // 1. Render Rumput Utama (grass.png)
+            const grassImg = decorImages.grass;
+            if (grassImg && grassImg.complete && grassImg.naturalWidth > 0) {
+                const tileW = grassImg.width;
+                const tileH = grassImg.height;
+                const renderW = tileW * DISPLAY_SCALE;
+                const renderH = tileH * DISPLAY_SCALE;
+
+                for (let y = 0; y < H; y += renderH) {
+                    for (let x = 0; x < W; x += renderW) {
+                        ctx.drawImage(
+                            grassImg, 
+                            0, 0, tileW, tileH, 
+                            x, y, renderW, renderH
+                        );
+                    }
+                }
+            } else {
+                rect(0, 0, W, H, '#71a35f');
+            }
+
+            // 2. Render Jalan Setapak dari grassway.png (2x2 tileset 48x48)
+            const wayImg = decorImages.grassway;
+            if (wayImg && wayImg.complete && wayImg.naturalWidth > 0) {
+                const tileSize = 48; // Ukuran asli tile
+                const renderTileSize = tileSize * DISPLAY_SCALE; // 96px di layar
+                const wayY = H * 0.40; // Posisi Y jalan setapak di tengah peta
+
+                // Menggambar Jalan Setapak Memanjang dari Kiri ke Kanan
+                for (let x = 0; x < W; x += renderTileSize) {
+                    let topSrcX = 24, topSrcY = 0;
+                    let botSrcX = 24, botSrcY = 48;
+
+                    if (x === 0) {
+                        // Ujung Paling Kiri Jalan (Mengambil potongan Kiri-Atas & Kiri-Bawah)
+                        topSrcX = 24; topSrcY = 0;
+                        botSrcX = 24; botSrcY = 48;
+                    } else if (x + renderTileSize >= W) {
+                        // Ujung Paling Kanan Jalan (Mengambil potongan Kanan-Atas & Kanan-Bawah)
+                        topSrcX = 48; topSrcY = 0;
+                        botSrcX = 48; botSrcY = 48;
+                    } else {
+                        // Badan Tengah Jalan (Mengambil potongan dalam tanah tanpa pinggiran rumput vertikal)
+                        topSrcX = 24; topSrcY = 0;
+                        botSrcX = 24; botSrcY = 48;
+                    }
+
+                    // Baris Atas Jalan
+                    ctx.drawImage(wayImg, topSrcX, topSrcY, tileSize, tileSize, x, wayY, renderTileSize, renderTileSize);
+                    // Baris Bawah Jalan
+                    ctx.drawImage(wayImg, botSrcX, botSrcY, tileSize, tileSize, x, wayY + renderTileSize, renderTileSize, renderTileSize);
+                }
+            }
+            
+            ctx.strokeStyle = '#273b2a';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 8]);
+            ctx.strokeRect(12, 12, W - 24, H - 24);
+            ctx.setLineDash([]);
+        }
+
+        function drawSpeechBubble(x, y, text) {
+            ctx.font = '10px sans-serif';
+            const textWidth = ctx.measureText(text).width;
+            const bubbleW = textWidth + 12;
+            const bubbleH = 20;
+            const bx = x - bubbleW / 2;
+            const by = y - bubbleH - 8;
+
+            ctx.fillStyle = '#fffae6';
+            ctx.strokeStyle = '#323232';
+            ctx.lineWidth = 1.5;
+            ctx.fillRect(bx, by, bubbleW, bubbleH);
+            ctx.strokeRect(bx, by, bubbleW, bubbleH);
+
+            ctx.fillStyle = '#fffae6';
+            ctx.beginPath();
+            ctx.moveTo(x - 3, by + bubbleH);
+            ctx.lineTo(x + 3, by + bubbleH);
+            ctx.lineTo(x, by + bubbleH + 4);
+            ctx.fill();
+
+            ctx.fillStyle = '#222222';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, x, by + 14);
+            ctx.textAlign = 'left';
+        }
+
+        function drawActor(a) {
+            const sw = CELL_W, sh = CELL_H, scale = DISPLAY_SCALE, dw = sw * scale, dh = sh * scale;
+            const sx = a.frame * CELL_W, sy = a.dir * CELL_H;
+            
+            
+
+            if (a === selected) {
+                ctx.strokeStyle = '#ffe17c';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(Math.round(a.x - dw / 2 - 3), Math.round(a.y - dh - 3), dw + 6, dh + 6);
+            }
+
+            if (a.im.complete && a.im.naturalWidth) {
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(a.im, sx, sy, sw, sh, Math.round(a.x - dw / 2), Math.round(a.y - dh), dw, dh);
+            } else {
+                rect(a.x - 8, a.y - 20, 16, 20, '#e8a45e');
+            }
+
+            if (a.hello > 0 && a.dialogueText) {
+                drawSpeechBubble(a.x, a.y - dh - 6, a.dialogueText);
+            }
+
+            if (a === selected) {
+                rect(a.x - 12, a.y - dh - 9, 24, 3, '#f4ce68');
+            }
+        }
+
+        function chooseDirection(a) {
+            const options = [0, 1, 2, 3];
+            a.dir = options[Math.floor(Math.random() * options.length)];
+            const angles = { 0: Math.PI / 2, 1: Math.PI, 2: 0, 3: -Math.PI / 2 };
+            const angle = angles[a.dir] + (Math.random() - .5) * .35;
+            a.vx = Math.cos(angle) * a.speed;
+            a.vy = Math.sin(angle) * a.speed;
+            a.state = 'walk';
+            a.timer = 1.1 + Math.random() * 2.7;
+        }
+
+        function update(dt) {
+            elapsed += dt;
+            for (const a of actors) {
+                a.timer -= dt;
+                a.frameTimer += dt;
+                a.hello = Math.max(0, a.hello - dt);
+                
+                if (a.timer <= 0) {
+                    if (Math.random() < .72) chooseDirection(a);
+                    else { a.state = 'idle'; a.vx = a.vy = 0; a.frame = 1; a.timer = .6 + Math.random() * 1.8; }
+                }
+                
+                if (a.state === 'walk') {
+                    let nextX = a.x + a.vx * dt;
+                    let nextY = a.y + a.vy * dt;
+
+                    let collided = false;
+                    for (const d of decor) {
+                        if (d.solid) {
+                            if (d.type === 'bench') {
+                                const img = decorImages.bench;
+                                const benchW = (img && img.complete && img.naturalWidth) ? (img.width * DISPLAY_SCALE) : 64;
+                                const benchH = 16 * DISPLAY_SCALE;
+                                const halfW = benchW / 2 + 10;
+                                const halfH = benchH / 2 + 8;
+
+                                if (Math.abs(nextX - d.x) < halfW && Math.abs((nextY - 8) - d.y) < halfH) {
+                                    collided = true;
+                                    break;
+                                }
+                            } else if (d.type === 'tree') {
+                                const treeW = 24 * DISPLAY_SCALE;
+                                const treeH = 16 * DISPLAY_SCALE;
+                                const halfW = treeW / 2;
+                                const halfH = treeH / 2;
+                                const treeCenterY = d.y - (treeH / 2) - 4;
+
+                                if (Math.abs(nextX - d.x) < halfW && Math.abs(nextY - treeCenterY) < halfH) {
+                                    collided = true;
+                                    break;
+                                }
+                            } else {
+                                const distToObj = Math.hypot(nextX - d.x, (nextY - 10) - d.y);
+                                if (distToObj < d.radius + 8) {
+                                    collided = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (collided) {
+                        chooseDirection(a);
+                    } else {
+                        a.x = nextX;
+                        a.y = nextY;
+                    }
+
+                    if (a.x < 36 || a.x > W - 36) { a.x = Math.max(36, Math.min(W - 36, a.x)); a.vx *= -1; a.dir = a.vx < 0 ? 1 : 2; }
+                    if (a.y < 52 || a.y > H - 10) { a.y = Math.max(52, Math.min(H - 10, a.y)); a.vy *= -1; a.dir = a.vy < 0 ? 3 : 0; }
+                    
+                    if (a.frameTimer > .16) { a.frameTimer = 0; a.frame = a.frame === 0 ? 2 : a.frame === 2 ? 1 : 0; }
+                } else {
+                    a.frame = 1;
+                }
+            }
+
+            for (let i = 0; i < actors.length; i++) {
+                for (let j = i + 1; j < actors.length; j++) {
+                    const a = actors[i], b = actors[j];
+                    if (Math.hypot(a.x - b.x, a.y - b.y) < 45 && a.hello <= 0 && b.hello <= 0 && Math.random() < dt * .12) {
+                        a.state = b.state = 'idle';
+                        a.vx = a.vy = b.vx = b.vy = 0;
+                        a.timer = b.timer = 1.3;
+                        a.hello = b.hello = 1.4;
+                        
+                        const randomTextA = dialogues[Math.floor(Math.random() * dialogues.length)];
+                        const randomTextB = dialogues[Math.floor(Math.random() * dialogues.length)];
+                        a.dialogueText = randomTextA;
+                        b.dialogueText = randomTextB;
+
+                        a.dir = a.x > b.x ? 1 : 2;
+                        b.dir = a.dir === 1 ? 2 : 1;
+                        a.frame = b.frame = 1;
+                    }
+                }
+            }
+            if (selected) showSelected(selected);
+            updateHud();
+        }
+
+        function render() {
+            background();
+
+            const renderList = [];
+            for (const d of decor) {
+                if (d.type === 'tree' || d.type === 'bench' || d.type === 'lamp') {
+                    renderList.push({ type: 'decor', y: d.y, data: d });
+                }
+            }
+            for (const a of actors) {
+                renderList.push({ type: 'actor', y: a.y, data: a });
+            }
+
+            renderList.sort((a, b) => a.y - b.y);
+
+            for (const item of renderList) {
+                if (item.type === 'decor') {
+                    drawDecorItem(item.data);
+                } else if (item.type === 'actor') {
+                    drawActor(item.data);
+                }
+            }
+
+            const now = new Date();
+            const theme = getTimeTheme(now.getHours());
+            if (theme.skyOverlay !== 'rgba(0, 0, 0, 0)') {
+                rect(0, 0, W, H, theme.skyOverlay);
+            }
+
+            const isNightOrEvening = theme.name === 'Night' || theme.name === 'Evening';
+            for (const d of decor) {
+                if (d.type === 'lamp') {
+                    drawLampGlow(d.x, d.y, isNightOrEvening);
+                }
+            }
+        }
+
+        function loop(now) {
+            const dt = Math.min((now - last) / 1000 || 0, .04);
+            last = now;
+            if (!paused) update(dt);
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        function pos(e) {
+            const r = canvas.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
+        }
+
+        canvas.addEventListener('click', e => {
+            const p = pos(e);
+            let found = null, best = Infinity;
+            for (const a of actors) {
+                const dx = p.x - a.x, dy = p.y - (a.y - CELL_H * DISPLAY_SCALE / 2);
+                const d = dx * dx + dy * dy;
+                if (Math.abs(dx) < CELL_W * DISPLAY_SCALE / 2 + 6 && Math.abs(dy) < CELL_H * DISPLAY_SCALE / 2 + 6 && d < best) {
+                    found = a;
+                    best = d;
+                }
+            }
+
+            if (found) {
+                selected = found;
+                showSelected(found);
+                return;
+            }
+
+            if (selected) {
+                selected = null;
+                showSelected(null);
+                return;
+            }
+
+            if (!actors.length) return;
+            const a = actors.reduce((best, cur) => Math.hypot(cur.x - p.x, cur.y - p.y) < Math.hypot(best.x - p.x, best.y - p.y) ? cur : best, actors[0]);
+            const dx = p.x - a.x, dy = p.y - a.y;
+            a.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 1 : 2) : (dy < 0 ? 3 : 0);
+            const dist = Math.hypot(dx, dy) || 1;
+            a.vx = dx / dist * a.speed;
+            a.vy = dy / dist * a.speed;
+            a.state = 'walk';
+            a.timer = Math.min(5, Math.max(1, dist / a.speed));
+        });
+
+        pauseBtn.addEventListener('click', () => { paused = !paused; updateHud(); });
+        
+        addBtn.addEventListener('click', () => {
+            if (actors.length >= 10) {
+                selectedName.textContent = 'Character limit reached';
+                selectedDesc.textContent = 'Prototype is limited to a maximum of 10 characters.';
+                selectedStatus.textContent = 'Maximum limit';
+                charPickerWrap.style.display = 'none';
+                return;
+            }
+            selected = makeActor();
+            actors.push(selected);
+            showSelected(selected);
+            updateHud();
+        });
+
+        removeBtn.addEventListener('click', () => {
+            if (actors.length <= 1) {
+                selectedName.textContent = 'Minimum limit reached';
+                selectedDesc.textContent = 'The world must keep at least 1 inhabitant.';
+                selectedStatus.textContent = 'Minimum limit';
+                charPickerWrap.style.display = 'none';
+                return;
+            }
+            const removed = actors.pop();
+            if (selected === removed) {
+                selected = null;
+                showSelected(null);
+            }
+            updateHud();
+        });
+
+        resetBtn.addEventListener('click', () => { paused = false; reset(); updateHud(); });
+        window.addEventListener('resize', resize);
+        
+        resize();
+        reset();
+        updateHud();
+        requestAnimationFrame(loop);
+
+        startMusic();
+    })();
+    </script>
+</body>
+</html>
